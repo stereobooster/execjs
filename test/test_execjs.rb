@@ -156,19 +156,29 @@ class TestExecJS < Test::Unit::TestCase
     end
   end
 
+  def test_exception_message
+    begin
+      ExecJS.exec("throw 'hello'")
+    rescue ExecJS::ProgramError => e
+      assert_equal "hello", e.message
+    end
+    begin
+      ExecJS.exec("throw Error('hello')")
+    rescue ExecJS::ProgramError => e
+      assert_equal "hello", e.message
+    end
+  end
+
   def test_javascript_stack_trace
     begin
       ExecJS.exec("function foo() {throw new Error('test');}\nfoo();")
     rescue ExecJS::ProgramError => e
-      assert e.js_trace.length > 0
-      line, column, code = /.*:(\d+):(\d+) (.*)/.match(e.js_trace.last).to_a[1,3]
+      assert e.js_trace && e.js_trace.length > 0
+      code, line, column = /at (.*) \(.*:(\d+):(\d+)\)/.match(e.js_trace.first).to_a[1,3]
       assert_equal "2", line
-      assert_equal "foo();", code
+      assert code =~ /foo/, "there is code"
     end
-    begin
-      ExecJS.eval("function foo() {throw new Error('test');}\nfoo();")
-    rescue ExecJS::ProgramError => e
-      assert e.js_trace.length > 0
-    end
+    # test eval ?
+    # test call ?
   end
 end

@@ -16,7 +16,7 @@ module ExecJS
           if code
             code.strip!
           end
-          trace = ["at <eval>:#{line}:#{column} #{code}"]
+          trace = ["at #{code} (<eval>:#{line}:#{column})"]
         end
         return value, trace;
       end
@@ -80,9 +80,12 @@ module ExecJS
         end
 
         def extract_result(output, source)
-          trace = []
           begin
-            status, value = output.empty? ? [] : json_decode(output)
+            status, value, trace = output.empty? ? [] : json_decode(output)
+            if trace.respond_to?(:split)
+              trace = trace.lines.to_a
+              trace = trace[1, trace.length - 1]
+            end
           rescue
             status = 'err'
             value, trace = ExternalRuntime::extract_error(output, source)
