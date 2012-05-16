@@ -11,8 +11,8 @@ module ExecJS
         match_data = /.*\((\d+), (\d+)\).*Microsoft JScript: (.*)/.match(value)
         if match_data
           line, column, value = match_data.to_a[1,3]
-          line = line.to_i - 1
-          code = source.lines.to_a[line]
+          line = line.to_i
+          code = source.lines.to_a[line - 1]
           code.strip! if code.respond_to?(:strip!)
           trace = ["at #{code} (<eval>:#{line}:#{column})"]
         end
@@ -38,7 +38,7 @@ module ExecJS
 
       def exec(source, options = {})
         source = ExecJS::encode(source) if source.respond_to?(:encode)
-        source = "#{@source}\n#{source}" if @source
+        source = "#{@source}\n#{source}" if /\S/ =~ @source
 
         compile_to_tempfile(source) do |file|
           extract_result(@runtime.send(:exec_runtime, file.path, source), source)
@@ -77,13 +77,30 @@ module ExecJS
           end
         end
 
+        def process_trace(trace, source)
+          p source
+          p trace.lines.to_a if trace.respond_to?(:lines)
+          if trace.respond_to?(:lines)
+            trace = trace.lines.to_a
+            trace = trace[2, trace.length - 1]
+            trace.map! do |i|
+              if i =~ /at (.*) \(.*:(\d+):(\d+)\)/
+                i
+              else
+                line, column = /at .*:(\d+):(\d+)/.match(i).to_a[1,2]
+                code = source.lines.to_a[line.to_i - 1]
+                code.strip! if code.respond_to?(:strip!)
+                "at #{code} (<eval>:#{line}:#{column})"
+              end
+            end
+          end
+          trace
+        end
+
         def extract_result(output, source)
           begin
             status, value, trace = output.empty? ? [] : json_decode(output)
-            if trace.respond_to?(:split)
-              trace = trace.lines.to_a
-              trace = trace[1, trace.length - 1]
-            end
+            trace = process_trace(trace, source) if status != "ok"
           rescue
             status = 'err'
             value, trace = ExternalRuntime::extract_error(output, source)

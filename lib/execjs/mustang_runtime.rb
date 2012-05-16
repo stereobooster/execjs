@@ -41,9 +41,11 @@ module ExecJS
         when Mustang::V8::Function
           nil
         when Mustang::V8::SyntaxError
-          raise RuntimeError, value.message
+          message, trace = process_error(value)
+          raise RuntimeError.new(message, trace)
         when Mustang::V8::Error
-          raise ProgramError, value.message
+          message, trace = process_error(value)
+          raise ProgramError.new(message, trace)
         when Mustang::V8::Object
           value.inject({}) { |h, (k, v)|
             v = unbox(v)
@@ -54,6 +56,18 @@ module ExecJS
           value.respond_to?(:delegate) ? value.delegate : value
         end
       end
+
+      private
+        def process_error(error)
+          # line = error.line_no
+          # name = error.script_name
+          # column = error.start_col
+          code = error.source_line
+          line = 0
+          column = 0
+          name = "<unknown>"
+          [error.message, ["at #{code} (#{name}:#{line}:#{column})"]]
+        end
     end
 
     def name

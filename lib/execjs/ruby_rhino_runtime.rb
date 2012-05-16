@@ -3,6 +3,7 @@ module ExecJS
     class Context
       def initialize(source = "")
         source = ExecJS::encode(source) if source.respond_to?(:encode)
+        @source = source
 
         @rhino_context = ::Rhino::Context.new
         fix_memory_limit! @rhino_context
@@ -24,7 +25,7 @@ module ExecJS
           unbox @rhino_context.eval("(#{source})")
         end
       rescue ::Rhino::JSError => e
-        message, trace = process_error(e)
+        message, trace = process_error(e, source)
         if syntax_error?(e)
           raise RuntimeError.new(message, trace)
         else
@@ -35,7 +36,7 @@ module ExecJS
       def call(properties, *args)
         unbox @rhino_context.eval(properties).call(*args)
       rescue ::Rhino::JSError => e
-        message, trace = process_error(e)
+        message, trace = process_error(e, @source)
         if syntax_error?(e)
           raise RuntimeError.new(message, trace)
         else
@@ -78,11 +79,21 @@ module ExecJS
           error.message =~ /^syntax error/
         end
 
-        def process_error(error)
+        def process_error(error, source)
           message = error.message
+          if !message.kind_of?(String)
+            message = message.to_s.sub('Error: ', '')
+          end
+
           trace = error.javascript_backtrace.lines.to_a
-          trace.map do |i|
-            line, code = /at .*:(\d+) (.*)/.match(i).to_a[1,2]
+          if trace.length > 1
+            trace = trace[1, trace.length-1]
+          end
+          
+          trace.map! do |i|
+            line = /at .*:(\d+)/.match(i).to_a[1]
+            code = source.lines.to_a[line.to_i - 1]
+            code.strip! if code.respond_to?(:strip!)
             column = 0
             "at #{code} (<eval>:#{line}:#{column})"
           end
