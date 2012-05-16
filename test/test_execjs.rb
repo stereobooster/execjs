@@ -165,8 +165,8 @@ class TestExecJS < Test::Unit::TestCase
     begin
       ExecJS.exec("throw Error('hello error')")
     rescue ExecJS::ProgramError => e
-      p e.message.class.name
-      assert_equal "hello errro", e.message
+      p e.message.class
+      assert_equal "hello error", e.message
     end
   end
 

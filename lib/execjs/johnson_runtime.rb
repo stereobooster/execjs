@@ -67,10 +67,18 @@ module ExecJS
         end
 
         def process_error(error, source)
-          message, line = /(.*) at .*:(\d+)/.match(error.message).to_a[1,2]
-          code = source.lines.to_a[line.to_i - 1]
-          column = 0
-          trace = ["at #{code} (<eval>:#{line}:#{column})"]
+          message = error.message
+          tracr = nil
+          match = /(.*) at .*:(\d+)/.match(error.message).to_a[1,2]
+          if match
+            message, line = match
+            code = source.lines.to_a[line.to_i - 1]
+            code.strip! if code.respond_to?(:strip!)
+            column = 0
+            trace = ["at #{code} (<eval>:#{line}:#{column})"]
+          else
+            p message
+          end
           [message, trace]
         end
 

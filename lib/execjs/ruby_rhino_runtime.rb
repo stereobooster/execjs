@@ -24,20 +24,22 @@ module ExecJS
           unbox @rhino_context.eval("(#{source})")
         end
       rescue ::Rhino::JSError => e
-        if e.message =~ /^syntax error/
-          raise RuntimeError.new(e.message, e.javascript_backtrace.lines.to_a)
+        message, trace = process_error(e)
+        if syntax_error?(e)
+          raise RuntimeError.new(message, trace)
         else
-          raise ProgramError.new(e.message, e.javascript_backtrace.lines.to_a)
+          raise ProgramError.new(message, trace)
         end
       end
 
       def call(properties, *args)
         unbox @rhino_context.eval(properties).call(*args)
       rescue ::Rhino::JSError => e
-        if e.message == "syntax error"
-          raise RuntimeError.new(e.message, e.javascript_backtrace.lines.to_a)
+        message, trace = process_error(e)
+        if syntax_error?(e)
+          raise RuntimeError.new(message, trace)
         else
-          raise ProgramError.new(e.message, e.javascript_backtrace.lines.to_a)
+          raise ProgramError.new(message, trace)
         end
       end
 
@@ -70,6 +72,21 @@ module ExecJS
           else
             context.instance_eval { @native.setOptimizationLevel(-1) }
           end
+        end
+
+        def syntax_error?(error)
+          error.message =~ /^syntax error/
+        end
+
+        def process_error(error)
+          message = error.message
+          trace = error.javascript_backtrace.lines.to_a
+          trace.map do |i|
+            line, code = /at .*:(\d+) (.*)/.match(i).to_a[1,2]
+            column = 0
+            "at #{code} (<eval>:#{line}:#{column})"
+          end
+          [message, trace]
         end
     end
 

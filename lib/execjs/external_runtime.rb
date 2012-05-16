@@ -13,9 +13,7 @@ module ExecJS
           line, column, value = match_data.to_a[1,3]
           line = line.to_i - 1
           code = source.lines.to_a[line]
-          if code
-            code.strip!
-          end
+          code.strip! if code.respond_to?(:strip!)
           trace = ["at #{code} (<eval>:#{line}:#{column})"]
         end
         return value, trace;
