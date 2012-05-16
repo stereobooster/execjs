@@ -155,4 +155,20 @@ class TestExecJS < Test::Unit::TestCase
       ExecJS.exec("throw 'hello'")
     end
   end
+
+  def test_javascript_stack_trace
+    begin
+      ExecJS.exec("function foo() {throw new Error('test');}\nfoo();")
+    rescue ExecJS::ProgramError => e
+      assert e.js_trace.length > 0
+      line, column, code = /.*:(\d+):(\d+) (.*)/.match(e.js_trace.last).to_a[1,3]
+      assert_equal "2", line
+      assert_equal "foo();", code
+    end
+    begin
+      ExecJS.eval("function foo() {throw new Error('test');}\nfoo();")
+    rescue ExecJS::ProgramError => e
+      assert e.js_trace.length > 0
+    end
+  end
 end

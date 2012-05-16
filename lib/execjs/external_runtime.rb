@@ -4,6 +4,24 @@ require "tempfile"
 
 module ExecJS
   class ExternalRuntime
+    class << self
+      def extract_error(output, source)
+        trace = []
+        value = output.strip
+        match_data = /.*\((\d+), (\d+)\).*Microsoft JScript: (.*)/.match(value)
+        if match_data
+          line, column, value = match_data.to_a[1,3]
+          line = line.to_i - 1
+          code = source.lines.to_a[line]
+          if code
+            code.strip!
+          end
+          trace = ["at <eval>:#{line}:#{column} #{code}"]
+        end
+        return value, trace;
+      end
+    end
+
     class Context
       def initialize(runtime, source = "")
         source = ExecJS::encode(source) if source.respond_to?(:encode)
@@ -25,7 +43,7 @@ module ExecJS
         source = "#{@source}\n#{source}" if @source
 
         compile_to_tempfile(source) do |file|
-          extract_result(@runtime.send(:exec_runtime, file.path))
+          extract_result(@runtime.send(:exec_runtime, file.path, source), source)
         end
       end
 
@@ -49,6 +67,9 @@ module ExecJS
               source
             end
             output.sub!('#{encoded_source}') do
+              encode_unicode_codepoints(source)
+            end
+            output.sub!('#{escaped_source}') do
               encoded_source = encode_unicode_codepoints(source)
               json_encode("(function(){ #{encoded_source} })()")
             end
@@ -58,14 +79,21 @@ module ExecJS
           end
         end
 
-        def extract_result(output)
-          status, value = output.empty? ? [] : json_decode(output)
+        def extract_result(output, source)
+          trace = []
+          begin
+            status, value = output.empty? ? [] : json_decode(output)
+          rescue
+            status = 'err'
+            value, trace = ExternalRuntime::extract_error(output, source)
+          end
+
           if status == "ok"
             value
           elsif value =~ /SyntaxError:/
-            raise RuntimeError, value
+            raise RuntimeError.new(value, trace)
           else
-            raise ProgramError, value
+            raise ProgramError.new(value, trace)
           end
         end
 
@@ -160,12 +188,13 @@ module ExecJS
         @runner_source ||= IO.read(@runner_path)
       end
 
-      def exec_runtime(filename)
+      def exec_runtime(filename, source)
         output = sh("#{shell_escape(*(binary.split(' ') << filename))} 2>&1")
         if $?.success?
           output
         else
-          raise RuntimeError, output
+          value, trace = ExternalRuntime.extract_error(output, source)
+          raise RuntimeError.new(value, trace)
         end
       end
 

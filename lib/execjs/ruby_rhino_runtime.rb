@@ -25,9 +25,9 @@ module ExecJS
         end
       rescue ::Rhino::JSError => e
         if e.message =~ /^syntax error/
-          raise RuntimeError, e.message
+          raise RuntimeError.new(e.message, e.getScriptStackTrace.lines.to_a)
         else
-          raise ProgramError, e.message
+          raise ProgramError.new(e.message, e.getScriptStackTrace.lines.to_a)
         end
       end
 
@@ -35,9 +35,9 @@ module ExecJS
         unbox @rhino_context.eval(properties).call(*args)
       rescue ::Rhino::JSError => e
         if e.message == "syntax error"
-          raise RuntimeError, e.message
+          raise RuntimeError.new(e.message, e.getScriptStackTrace.lines.to_a)
         else
-          raise ProgramError, e.message
+          raise ProgramError.new(e.message, e.getScriptStackTrace.lines.to_a)
         end
       end
 

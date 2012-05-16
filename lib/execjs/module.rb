@@ -2,7 +2,15 @@ require "execjs/version"
 require "rbconfig"
 
 module ExecJS
-  class Error           < ::StandardError; end
+  class Error < ::StandardError; 
+    attr_accessor :js_trace
+    
+    def initialize(msg, js_trace = nil)
+      @js_trace = js_trace
+      super msg
+    end
+  end
+
   class RuntimeError              < Error; end
   class ProgramError              < Error; end
   class RuntimeUnavailable < RuntimeError; end
