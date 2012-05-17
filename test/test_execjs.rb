@@ -155,4 +155,31 @@ class TestExecJS < Test::Unit::TestCase
       ExecJS.exec("throw 'hello'")
     end
   end
+
+  def test_exception_message
+    # crash mustang on rbx 1.9 see https://github.com/nu7hatch/mustang/issues/20
+    # begin
+    #   ExecJS.exec("throw 'hello string'")
+    # rescue ExecJS::ProgramError => e
+    #   assert ("hello string" == e.message || "undefined" == e.message)
+    # end
+    begin
+      ExecJS.exec("throw Error('hello error')")
+    rescue ExecJS::ProgramError => e
+      assert_equal "hello error", e.message
+    end
+  end
+
+  def test_javascript_stack_trace
+    begin
+      ExecJS.exec("function foo() {throw new Error('test');}\nvar bar = 1;\nfoo();")
+    rescue ExecJS::ProgramError => e
+      assert e.js_trace && e.js_trace.length > 0
+      code, line, column = /at (.*) \(.*:(\d+):(\d+)\)/.match(e.js_trace.first).to_a[1,3]
+      assert ("3" == line || "0" == line), "there is line"
+      assert (code =~ /foo/ || code == ""), "there is code"
+    end
+    # test eval ?
+    # test call ?
+  end
 end
