@@ -85,17 +85,21 @@ module ExecJS
             message = message.to_s.sub('Error: ', '')
           end
 
-          trace = error.javascript_backtrace.lines.to_a
-          if trace.length > 1
-            trace = trace[1, trace.length-1]
-          end
-          
-          trace.map! do |i|
-            line = /at .*:(\d+)/.match(i).to_a[1]
-            code = source.lines.to_a[line.to_i - 1]
-            code.strip! if code.respond_to?(:strip!)
-            column = 0
-            "at #{code} (<eval>:#{line}:#{column})"
+          if error.javascript_backtrace.respond_to?(:lines)
+            trace = error.javascript_backtrace.lines.to_a
+            if trace.length > 1
+              trace = trace[1, trace.length-1]
+            end
+            
+            trace.map! do |i|
+              line = /at .*:(\d+)/.match(i).to_a[1]
+              code = source.lines.to_a[line.to_i - 1]
+              code.strip! if code.respond_to?(:strip!)
+              column = 0
+              "at #{code} (<eval>:#{line}:#{column})"
+            end
+          else
+            trace = nil
           end
           [message, trace]
         end

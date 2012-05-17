@@ -78,8 +78,6 @@ module ExecJS
         end
 
         def process_trace(trace, source)
-          p source
-          p trace.lines.to_a if trace.respond_to?(:lines)
           if trace.respond_to?(:lines)
             trace = trace.lines.to_a
             trace = trace[2, trace.length - 1]
