@@ -23,9 +23,7 @@ module ExecJS
         source = source.lines.to_a
         trace.map! do |i|
           line, column = /at .*:(\d+):(\d+)/.match(i).to_a[1,2]
-          code = source[line.to_i-1]
-          code.strip! if code.respond_to?(:strip!)
-          "at #{code} (<eval>:#{line}:#{column})"
+          ExecJS.trace_line(source, line, column)
         end
         trace.reverse
       end

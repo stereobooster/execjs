@@ -73,12 +73,11 @@ module ExecJS
 
       protected
         def process_error(error)
-          code = error.source_line
-          line = 0 # error.line_no
-          column = 0 # error.start_col
-          name = "<unknown>" # error.script_name
-          trace = ["at #{code} (#{name}:#{line}:#{column})"]
+          # error.line_no
+          # error.start_col
+          # error.script_name
           message = error.message
+          trace = ExecJS.trace_unknown error.source_line
           [message, trace]
         end
     end

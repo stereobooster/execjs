@@ -6,17 +6,15 @@ module ExecJS
   class ExternalRuntime
     class << self
       def extract_error(output, source)
-        trace = []
-        value = output.strip
-        match_data = /.*\((\d+), (\d+)\).*Microsoft JScript: (.*)/.match(value)
+        match_data = /.*\((\d+), (\d+)\).*Microsoft JScript: (.*)/.match(output.strip)
         if match_data
-          line, column, value = match_data.to_a[1,3]
-          line = line.to_i
-          code = source.lines.to_a[line - 1]
-          code.strip! if code.respond_to?(:strip!)
-          trace = ["at #{code} (<eval>:#{line}:#{column})"]
+          line, column, message = match_data.to_a[1,3]
+          trace = [ExecJS.trace_line(source, line, column)]
+        else
+          message = output.strip  
+          trace = nil
         end
-        return value, trace;
+        [message, trace]
       end
     end
 

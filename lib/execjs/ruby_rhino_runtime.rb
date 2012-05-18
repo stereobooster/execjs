@@ -93,10 +93,8 @@ module ExecJS
             
             trace.map! do |i|
               line = /at .*:(\d+)/.match(i).to_a[1]
-              code = source.lines.to_a[line.to_i - 1]
-              code.strip! if code.respond_to?(:strip!)
               column = 0
-              "at #{code} (<eval>:#{line}:#{column})"
+              ExecJS.trace_line(source, line, column)
             end
           else
             trace = nil

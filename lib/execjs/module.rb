@@ -71,5 +71,21 @@ module ExecJS
         string
       end
     end
+
+    def trace_line(source, line, column, name = '<eval>')
+      line = line.to_i
+      source = source.lines.to_a if source.respond_to?(:lines)
+      if line > 0 && source.length >= line
+        code = source[line - 1]
+      else
+        code = source[0]
+      end
+      code.strip! if code.respond_to?(:strip!)
+      "at #{code} (#{name}:#{line}:#{column})"
+    end
+
+    def trace_unknown(code = '')
+      [trace_line(code, 0, 0, '<unknown>')]
+    end
   end
 end
