@@ -22,9 +22,9 @@ end
 
 def banner(text)
   warn ""
-  warn "=" * Rake.application.terminal_width
+  warn "=" * (Rake.application.terminal_width - 3)
   warn text
-  warn "=" * Rake.application.terminal_width
+  warn "=" * (Rake.application.terminal_width - 3)
   warn ""
 end
 

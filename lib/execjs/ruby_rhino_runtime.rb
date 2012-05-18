@@ -98,11 +98,11 @@ module ExecJS
           if error.javascript_backtrace.respond_to?(:lines)
             trace = error.javascript_backtrace.lines.to_a
             if trace.length > 1
-              trace = trace[1, trace.length-1]
+              trace = trace[0, trace.length-1]
             end
-            
+            puts trace
             trace.map! do |i|
-              line = /^at .*:(\d+)$/.match(i.strip).to_a[1]
+              line = /^at .*:(\d+)( \(.*\))?$/.match(i.strip).to_a[1]
               column = 0
               ExecJS.trace_line(source, line, column)
             end

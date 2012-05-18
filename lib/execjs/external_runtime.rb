@@ -6,12 +6,13 @@ module ExecJS
   class ExternalRuntime
     class << self
       def extract_error(output, source)
-        match_data = /^.*\((\d+), (\d+)\).*Microsoft JScript: (.*)$/.match(output.strip)
+        match_data = /^.*\((\d+), (\d+)\).*Microsoft JScript( runtime error)?: (.*)$/.match(output)
         if match_data
-          line, column, message = match_data.to_a[1,3]
+          line, column, message, message = match_data.to_a[1,4]
+          line = line.to_i - 1
           trace = [ExecJS.trace_line(source, line, column)]
         else
-          message = output.strip  
+          message = output
           trace = false
         end
         [message, trace]
@@ -78,17 +79,12 @@ module ExecJS
         def process_trace(trace, source)
           if trace.respond_to?(:lines)
             trace = trace.lines.to_a
-            trace = trace[2, trace.length - 1]
+            trace = trace[1, trace.length - 8]
+            puts trace
             trace.map! do |i|
-              i.strip!
-              if i =~ /^at (.*) \(.*:(\d+):(\d+)\)$/
-                i
-              else
-                line, column = /^at .*:(\d+):(\d+)$/.match(i).to_a[1,2]
-                code = source.lines.to_a[line.to_i - 1]
-                code.strip! if code.respond_to?(:strip!)
-                "at #{code} (<eval>:#{line}:#{column})"
-              end
+              line, column = /^at .*:(\d+):(\d+)\)?$/.match(i.strip).to_a[1,2]
+              line = line.to_i - 1
+              ExecJS.trace_line(source, line, column)
             end
           end
           trace
