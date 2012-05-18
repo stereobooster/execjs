@@ -22,7 +22,7 @@ module ExecJS
       def prepare_trace(trace, source)
         source = source.lines.to_a
         trace.map! do |i|
-          line, column = /at .*:(\d+):(\d+)/.match(i).to_a[1,2]
+          line, column = /^at .*:(\d+):(\d+)$/.match(i).to_a[1,2]
           ExecJS.trace_line(source, line, column)
         end
         trace.reverse

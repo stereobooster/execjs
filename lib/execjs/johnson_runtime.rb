@@ -67,7 +67,7 @@ module ExecJS
         end
 
         def process_error(error, source)
-          match = /^(.*) at .*:\d+/.match(error.message).to_a[1]
+          match = /^(.*) at .*:\d+$/.match(error.message).to_a[1]
           message = match ? match : error.message
           [message, nil]
         end
