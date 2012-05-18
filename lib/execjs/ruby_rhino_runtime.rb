@@ -7,6 +7,7 @@ module ExecJS
 
         @rhino_context = ::Rhino::Context.new
         fix_memory_limit! @rhino_context
+        test_error
         @rhino_context.eval(source)
       end
 
@@ -81,8 +82,17 @@ module ExecJS
 
         def process_error(error, source)
           message = error.message
-          if !message.kind_of?(String)
-            message = message.to_s.sub('Error: ', '')
+
+          if @adds_error #!message.kind_of?(String)
+            message = message.to_s.gsub(/^[A-Za-z]*Error: /, '')
+          end
+
+          # for jruby-head
+          if @adds_line
+            match = /^(.*) \(.*#\d+\)$/.match(message)
+            if match
+              message = match.to_a[1]
+            end
           end
 
           if error.javascript_backtrace.respond_to?(:lines)
@@ -92,7 +102,7 @@ module ExecJS
             end
             
             trace.map! do |i|
-              line = /at .*:(\d+)/.match(i).to_a[1]
+              line = /^at .*:(\d+)$/.match(i.strip).to_a[1]
               column = 0
               ExecJS.trace_line(source, line, column)
             end
@@ -100,6 +110,14 @@ module ExecJS
             trace = nil
           end
           [message, trace]
+        end
+
+        def test_error
+          @rhino_context.eval("throw new Error('test')")
+        rescue ::Rhino::JSError => e
+          error = e.message.to_s
+          @adds_error = error =~ /^Error: test/
+          @adds_line = error =~ /test \(<eval>#1\)$/
         end
     end
 

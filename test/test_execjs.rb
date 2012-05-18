@@ -150,22 +150,33 @@ class TestExecJS < Test::Unit::TestCase
     end
   end
 
-  def test_thrown_exception
-    assert_raise ExecJS::ProgramError do
-      ExecJS.exec("throw 'hello'")
-    end
+  def assert_raise_message(klass, message, &block)
+    block.call
+  rescue Exception => e
+    assert klass === e, "Expected #{klass.name}, but was #{e.class.name}"
+    assert_equal message, e.message
   end
 
-  def test_exception_message
-    begin
+  def test_thrown_exception
+    assert_raise_message ExecJS::ProgramError, 'hello string' do
       ExecJS.exec("throw 'hello string'")
-    rescue ExecJS::ProgramError => e
-      assert_equal "hello string", e.message
     end
-    begin
+
+    assert_raise_message ExecJS::ProgramError, 'hello error' do
       ExecJS.exec("throw Error('hello error')")
-    rescue ExecJS::ProgramError => e
-      assert_equal "hello error", e.message
+    end
+
+    # fails on jruby-head see https://github.com/cowboyd/therubyrhino/issues/19
+    # assert_raise_message ExecJS::ProgramError, 'Error: hello jruby (<eval>#1)' do
+    #   ExecJS.exec("throw 'Error: hello jruby (<eval>#1)'")
+    # end
+
+    assert_raise_message ExecJS::ProgramError, 'Error: hello jruby (<eval>#1)' do
+      ExecJS.exec("throw Error('Error: hello jruby (<eval>#1)')")
+    end
+
+    assert_raise_message ExecJS::ProgramError, 'hello johnson at node:1' do
+      ExecJS.exec("throw Error('hello johnson at node:1')")
     end
   end
 
