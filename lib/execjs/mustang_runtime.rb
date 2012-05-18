@@ -20,7 +20,7 @@ module ExecJS
         source = ExecJS.encode(source)
 
         if /\S/ =~ source
-          unbox @v8_context.eval("(#{source})")
+          unbox @v8_context.eval(save_string_error source)
         end
       end
 
@@ -55,6 +55,20 @@ module ExecJS
         else
           value.respond_to?(:delegate) ? value.delegate : value
         end
+      end
+
+      # workaround for https://github.com/nu7hatch/mustang/issues/20
+      def save_string_error(source)
+        "
+        try {
+          (#{source})
+        } catch(e) {
+          if (typeof e == 'string') {
+            throw new Error(e);
+          } else {
+            throw e;
+          }
+        }"
       end
 
       protected
