@@ -12,7 +12,7 @@ module ExecJS
           trace = [ExecJS.trace_line(source, line, column)]
         else
           message = output.strip  
-          trace = nil
+          trace = false
         end
         [message, trace]
       end

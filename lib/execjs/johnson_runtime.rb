@@ -69,8 +69,7 @@ module ExecJS
         def process_error(error, source)
           match = /^(.*) at .*:\d+/.match(error.message).to_a[1]
           message = match ? match : error.message
-          trace = ExecJS.trace_unknown
-          [message, trace]
+          [message, nil]
         end
 
         def function?(value)

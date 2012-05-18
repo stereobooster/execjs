@@ -5,7 +5,7 @@ module ExecJS
   class Error < ::StandardError; 
     attr_accessor :js_trace
     
-    def initialize(msg, js_trace = nil)
+    def initialize(msg, js_trace = false)
       @js_trace = js_trace
       super msg
     end
@@ -82,10 +82,6 @@ module ExecJS
       end
       code.strip! if code.respond_to?(:strip!)
       "at #{code} (#{name}:#{line}:#{column})"
-    end
-
-    def trace_unknown(code = '')
-      [trace_line(code, 0, 0, '<unknown>')]
     end
   end
 end

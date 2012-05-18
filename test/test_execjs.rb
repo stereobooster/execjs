@@ -173,11 +173,13 @@ class TestExecJS < Test::Unit::TestCase
     begin
       ExecJS.exec("function foo() {throw new Error('test');}\nvar bar = 1;\nfoo();")
     rescue ExecJS::ProgramError => e
-      assert e.js_trace && e.js_trace.length > 0
-      code, file, line, column = /at (.*) \((.*):(\d+):(\d+)\)/.match(e.js_trace.first).to_a[1,4]
-      if line == "0" && column == "0" && file == "<unknown>"
-        assert true
+
+      if e.js_trace == nil
+        assert true, "Can't get trace information"
+      elsif e.js_trace == false
+        assert false, "Not implemented"
       else
+        code, line = /at (.*) \(.*:(\d+):\d+\)/.match(e.js_trace.first).to_a[1,2]
         assert_equal "3", line
         assert code =~ /foo/, "there is code"
       end

@@ -76,9 +76,8 @@ module ExecJS
           # error.line_no
           # error.start_col
           # error.script_name
-          message = error.message
-          trace = ExecJS.trace_unknown error.source_line
-          [message, trace]
+          # error.source_line
+          [error.message, nil]
         end
     end
 
