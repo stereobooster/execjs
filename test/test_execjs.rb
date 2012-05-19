@@ -158,6 +158,7 @@ class TestExecJS < Test::Unit::TestCase
   end
 
   def test_thrown_exception
+    # fails on jscript
     assert_raise_message ExecJS::ProgramError, 'hello string' do
       ExecJS.exec("throw 'hello string'")
     end
@@ -182,18 +183,24 @@ class TestExecJS < Test::Unit::TestCase
 
   def test_javascript_stack_trace
     begin
-      ExecJS.exec("function foo() {throw new Error('test');}\nvar bar = 1;\nfoo();")
+      ExecJS.exec("function foo() {bar();}\n'a';\nfunction bar(){throw new Error('test');}\n'b';\nfoo();")
     rescue ExecJS::ProgramError => e
-
       if e.js_trace == nil
-        assert true, "Can't get trace information"
+        assert true, "can't get trace information"
       elsif e.js_trace == false
-        assert false, "Not implemented"
+        fail "js_trace not implemented"
       else
-        code, line = /at (.*) \(.*:(\d+):\d+\)/.match(e.js_trace.first).to_a[1,2]
+        code, line = /at (.*) \(.*:(\d+):(\d+)\)/.match(e.js_trace.first).to_a[1,2]
         assert_equal "3", line
-        assert code =~ /foo/, "there is code"
+        assert_match(/throw new Error\('test'\)/, code)
+        if e.js_trace.length > 1
+          code, line = /at (.*) \(.*:(\d+):\d+\)/.match(e.js_trace.last).to_a[1,2]
+          assert_equal "5", line
+          assert code =~ /foo/, "there is code"
+        end
       end
+    else
+      fail "expected to rescue"
     end
     # test eval ?
     # test call ?
